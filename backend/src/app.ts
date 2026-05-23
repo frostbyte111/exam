@@ -22,11 +22,28 @@ export function buildApp() {
   });
 
   // ── CORS ────────────────────────────────────────────────────
-  const allowedOrigin = isProd ? (process.env.FRONTEND_URL ?? false) : true;
   app.register(cors, {
-    origin: allowedOrigin,
+    origin: (origin, cb) => {
+      // Allow requests with no origin (health checks, curl, Postman)
+      if (!origin) return cb(null, true);
+      
+      const allowed = [
+        process.env.FRONTEND_URL,
+        'http://localhost:3000',
+      ].filter(Boolean);
+
+      if (allowed.includes(origin)) {
+        cb(null, true);
+      } else {
+        // In development allow everything
+        if (!isProd) return cb(null, true);
+        cb(new Error(`CORS: origin ${origin} not allowed`), false);
+      }
+    },
     credentials: true,
     methods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    exposedHeaders: ['set-cookie'],
   });
 
   // ── Helmet ──────────────────────────────────────────────────
@@ -53,7 +70,7 @@ export function buildApp() {
   });
 
   // ── Routes ──────────────────────────────────────────────────
-  app.register(authRoutes,   { prefix: '/api/auth' });
+  app.register(authRoutes,    { prefix: '/api/auth' });
   app.register(studentRoutes, { prefix: '/api/students' });
 
   // ── Health ──────────────────────────────────────────────────
