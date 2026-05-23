@@ -22,7 +22,17 @@ export async function api<T>(
   if (rest.body) headers['Content-Type'] = 'application/json';
   if (token)     headers['Authorization'] = `Bearer ${token}`;
 
-  const res = await fetch(`${BASE}${path}`, { credentials: 'include', ...rest, headers });
+  const res = await fetch(`${BASE}${path}`, { 
+    credentials: 'include', 
+    cache: 'no-store', // Fix: Force Next.js and browser to NEVER cache API responses
+    ...rest, 
+    headers: {
+      ...headers,
+      'Cache-Control': 'no-cache, no-store, must-revalidate',
+      'Pragma': 'no-cache',
+      'Expires': '0'
+    }
+  });
 
   if (res.status === 204) return null as T;
   const data = await res.json().catch(() => ({}));
