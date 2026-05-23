@@ -19,10 +19,28 @@ export function UserProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const stored = tokenStore.get();
+    const timeout = setTimeout(() => setLoading(false), 3000);
+    
     api<{ user: AppUser | null; token: string | null }>('/api/auth/me', { token: stored })
-      .then(d => { if (d.user && d.token) { setUser(d.user); tokenStore.set(d.token); } else tokenStore.clear(); })
-      .catch(() => tokenStore.clear())
-      .finally(() => setLoading(false));
+      .then(d => {
+        clearTimeout(timeout);
+        if (d.user && d.token) {
+          setUser(d.user);
+          tokenStore.set(d.token);
+        } else {
+          tokenStore.clear();
+        }
+      })
+      .catch(() => {
+        clearTimeout(timeout);
+        tokenStore.clear();
+      })
+      .finally(() => {
+        clearTimeout(timeout);
+        setLoading(false);
+      });
+
+    return () => clearTimeout(timeout);
   }, []);
 
   const setSession = useCallback((token: string, u: AppUser) => {
@@ -37,7 +55,11 @@ export function UserProvider({ children }: { children: ReactNode }) {
     setUser(null);
   }, []);
 
-  return <UserCtx.Provider value={{ user, loading, setSession, logout }}>{children}</UserCtx.Provider>;
+  return (
+    <UserCtx.Provider value={{ user, loading, setSession, logout }}>
+      {children}
+    </UserCtx.Provider>
+  );
 }
 
 export function useUser() {
