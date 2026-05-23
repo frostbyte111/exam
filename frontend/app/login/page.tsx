@@ -22,12 +22,10 @@ export default function LoginPage() {
   const [info, setInfo] = useState('');
   const [busy, setBusy] = useState(false);
 
-  // Already logged in → go straight to /students
   useEffect(() => {
     if (!sessionLoading && user) router.replace('/students');
   }, [sessionLoading, user, router]);
 
-  // ── Step 1: check credentials, trigger OTP ────────────────
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
     setError(''); setInfo('');
@@ -40,16 +38,15 @@ export default function LoginPage() {
       });
       setInfo(`A 6-digit code has been sent to ${email.trim()}.`);
       setStep('otp');
-      setTsToken(''); // token is single-use
+      setTsToken('');
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Login failed');
-      setTsToken(''); // force user to re-verify Turnstile
+      setTsToken('');
     } finally {
       setBusy(false);
     }
   }
 
-  // ── Step 2: confirm OTP → receive JWT ─────────────────────
   async function handleOTP(e: React.FormEvent) {
     e.preventDefault();
     setError('');
@@ -98,7 +95,7 @@ export default function LoginPage() {
         {/* Card */}
         <div className="bg-white rounded-2xl shadow-xl border border-[--border] p-8">
 
-          {/* ── credentials form ─────────────────────────── */}
+          {/* ── Step 1: credentials ── */}
           {step === 'credentials' && (
             <form onSubmit={handleLogin} className="space-y-4">
               <div>
@@ -127,36 +124,45 @@ export default function LoginPage() {
                 </div>
               </div>
 
-              {/* Cloudflare Turnstile */}
               <Turnstile
                 onVerify={t => setTsToken(t)}
                 onExpire={() => setTsToken('')}
                 onError={() => setTsToken('')}
               />
 
-              {error && <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">{error}</p>}
+              {error && (
+                <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+                  {error}
+                </p>
+              )}
 
               <button
-                type="submit" disabled={busy}
-                className="w-full bg-[--navy] hover:bg-[--navy2] text-white font-semibold py-2.5 rounded-lg text-sm transition flex items-center justify-center gap-2 disabled:opacity-60"
+                type="submit"
+                disabled={busy}
+                className="w-full bg-[--navy] hover:bg-slate-700 active:bg-slate-900 text-white font-bold py-3 rounded-xl text-base tracking-wide transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed shadow-md mt-2"
               >
-                {busy && <Loader2 size={15} className="spin" />}
-                {busy ? 'Checking…' : 'Continue'}
+                {busy ? <Loader2 size={18} className="spin" /> : null}
+                {busy ? 'Signing in…' : 'Sign in'}
               </button>
             </form>
           )}
 
-          {/* ── OTP form ──────────────────────────────────── */}
+          {/* ── Step 2: OTP ── */}
           {step === 'otp' && (
             <form onSubmit={handleOTP} className="space-y-4">
               <button
-                type="button" onClick={() => { setStep('credentials'); setError(''); setInfo(''); setOtp(''); }}
+                type="button"
+                onClick={() => { setStep('credentials'); setError(''); setInfo(''); setOtp(''); }}
                 className="flex items-center gap-1.5 text-sm text-[--slate] hover:text-[--navy2] transition mb-2"
               >
                 <ArrowLeft size={14} /> Use a different account
               </button>
 
-              {info && <p className="text-sm text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg px-3 py-2">{info}</p>}
+              {info && (
+                <p className="text-sm text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg px-3 py-2">
+                  {info}
+                </p>
+              )}
 
               <div>
                 <label className="block text-sm font-medium text-[--navy2] mb-1.5">6-digit code</label>
@@ -173,14 +179,19 @@ export default function LoginPage() {
                 </div>
               </div>
 
-              {error && <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">{error}</p>}
+              {error && (
+                <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+                  {error}
+                </p>
+              )}
 
               <button
-                type="submit" disabled={busy}
-                className="w-full bg-[--navy] hover:bg-[--navy2] text-white font-semibold py-2.5 rounded-lg text-sm transition flex items-center justify-center gap-2 disabled:opacity-60"
+                type="submit"
+                disabled={busy}
+                className="w-full bg-[--navy] hover:bg-slate-700 active:bg-slate-900 text-white font-bold py-3 rounded-xl text-base tracking-wide transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed shadow-md"
               >
-                {busy && <Loader2 size={15} className="spin" />}
-                {busy ? 'Verifying…' : 'Sign in'}
+                {busy ? <Loader2 size={18} className="spin" /> : null}
+                {busy ? 'Verifying…' : 'Confirm code'}
               </button>
             </form>
           )}
@@ -188,7 +199,7 @@ export default function LoginPage() {
         </div>
 
         <p className="text-center text-xs text-[--slate] mt-5">
-          Protected by Cloudflare Turnstile · Email 2FA required on every login
+          Protected by Cloudflare Turnstile · Email 2FA on every login
         </p>
       </div>
     </div>

@@ -16,12 +16,13 @@ declare global {
   }
 }
 
-let loaded = false;
+let loadPromise: Promise<void> | null = null;
 function loadScript(): Promise<void> {
   if (typeof window === 'undefined') return Promise.resolve();
-  if (window.turnstile || loaded) return Promise.resolve();
-  loaded = true;
-  return new Promise((res, rej) => {
+  if (window.turnstile) return Promise.resolve();
+  if (loadPromise) return loadPromise;
+  
+  loadPromise = new Promise((res, rej) => {
     const s = document.createElement('script');
     s.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
     s.async = true;
@@ -29,6 +30,7 @@ function loadScript(): Promise<void> {
     s.onerror = () => rej(new Error('Turnstile failed to load'));
     document.head.appendChild(s);
   });
+  return loadPromise;
 }
 
 export default function Turnstile({
