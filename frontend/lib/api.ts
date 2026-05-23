@@ -36,6 +36,17 @@ export async function api<T>(
 export const tokenStore = {
   get: (): string | undefined =>
     typeof window !== 'undefined' ? sessionStorage.getItem('jwt') ?? undefined : undefined,
-  set: (t: string) => sessionStorage.setItem('jwt', t),
-  clear: () => sessionStorage.removeItem('jwt'),
+  set: (t: string) => {
+    if (typeof window !== 'undefined') {
+      sessionStorage.setItem('jwt', t);
+      // Sync to cookie so Next.js middleware can read it on the frontend domain
+      document.cookie = `auth_token=${t}; path=/; max-age=604800; samesite=lax; secure`;
+    }
+  },
+  clear: () => {
+    if (typeof window !== 'undefined') {
+      sessionStorage.removeItem('jwt');
+      document.cookie = 'auth_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+    }
+  },
 };
